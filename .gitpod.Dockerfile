@@ -3,7 +3,7 @@ FROM gitpod/workspace-full
 USER root
 
 RUN apt-get update \
-    && apt-get install -y mpich2
+    && apt-get install -y libopenmpi-dev openmpi-bin openmpi-doc
 # Install custom tools, runtime, etc. using apt-get
 # For example, the command below would install "bastet" - a command line tetris clone:
 #
