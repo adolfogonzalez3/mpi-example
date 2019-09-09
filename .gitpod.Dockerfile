@@ -3,8 +3,8 @@ FROM gitpod/workspace-full
 USER root
 
 RUN apt-get update \
-    && apt-get install mpi \
-    && apt-get install clangd
+    && apt-get install -y mpi \
+    && apt-get install -y clangd
 # Install custom tools, runtime, etc. using apt-get
 # For example, the command below would install "bastet" - a command line tetris clone:
 #
