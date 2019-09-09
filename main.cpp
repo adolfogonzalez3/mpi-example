@@ -87,7 +87,7 @@ int main(int argc, char *argv[]){
         "Hello", "World!", "what?",
         "Hello", "World!", "what?"
     };
-    check_error(MPI_Init(NULL, NULL));
+    check_error(MPI_Init(&argc, &argv));
     check_error(MPI_Comm_size( MPI_COMM_WORLD, &p ));
     check_error(MPI_Comm_rank(MPI_COMM_WORLD, &id));
     if (id == 0) {
