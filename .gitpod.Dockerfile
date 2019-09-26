@@ -13,10 +13,10 @@ RUN git clone --depth 1 https://github.com/wichtounet/mnist.git mnist
 
 
 
-RUN wget http://bitbucket.org/eigen/eigen/get/3.3.7.zip &&
-    unzip 3.3.7.zip &&
-    rm 3.3.7.zip &&
-    mv eigen-eigen-323c052e1731/ eigen
+RUN wget http://bitbucket.org/eigen/eigen/get/3.3.7.zip \
+    && unzip 3.3.7.zip \
+    && rm 3.3.7.zip \
+    && mv eigen-eigen-323c052e1731/ eigen
 
 
 # Install custom tools, runtime, etc. using apt-get
