@@ -7,11 +7,17 @@ RUN apt-get update \
 
 ENV OMPI_MCA_btl_base_warn_component_unused 0
 
-RUN mkdir /work/
+WoRKDIR /work/
 
-RUN git clone --depth 1 https://github.com/wichtounet/mnist.git /work/mnist
+RUN git clone --depth 1 https://github.com/wichtounet/mnist.git mnist
 
-RUN git clone --depth 1 https://github.com/eigenteam/eigen-git-mirror.git /work/eigen
+
+
+RUN wget http://bitbucket.org/eigen/eigen/get/3.3.7.zip &&
+    unzip 3.3.7.zip &&
+    rm 3.3.7.zip &&
+    mv eigen-eigen-323c052e1731/ eigen
+
 
 # Install custom tools, runtime, etc. using apt-get
 # For example, the command below would install "bastet" - a command line tetris clone:
