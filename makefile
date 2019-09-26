@@ -5,7 +5,7 @@ build: gradient_descent.out homework3.out cannon.out oddevensorting.out
 	echo "DONE"
 
 gradient_descent.out: gradient_descent.cpp
-	mpiCC -I ../eigen-eigen-323c052e1731/ -I ../mnist/include/ gradient_descent.cpp -o gradient_descent.out
+	mpiCC -I ../eigen/ -I ../mnist/include/ gradient_descent.cpp -o gradient_descent.out
 
 homework3.out: hmmm.cpp
 	mpiCC hmmm.cpp -o homework3.out
