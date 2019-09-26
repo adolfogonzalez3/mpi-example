@@ -11,7 +11,7 @@ RUN git clone --depth 1 https://github.com/wichtounet/mnist.git /workspace/mnist
 
 RUN git clone --depth https://github.com/eigenteam/eigen-git-mirror.git /workspace/eigen
 
-
+RUN mv /workspace/mnist/*-ubyte /workspace/mpi-example/
 
 # Install custom tools, runtime, etc. using apt-get
 # For example, the command below would install "bastet" - a command line tetris clone:
