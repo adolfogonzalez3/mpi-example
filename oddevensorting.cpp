@@ -1,42 +1,48 @@
-#include <mpi.h>
-#include <stdlib.h>
+/*
+ *   Taken from the book. Augemented for easier reading and understanding.
+ */
+#include "mpi.h"    // MPI_Init, MPI_Comm_size, MPI_Comm_rank, MPI_Finalize
+#include <chrono>   // std::chrono::seconds
+#include <iostream> // std::std::cout, std::std::endl
+#include <stdlib.h> // srandom, random
+#include <thread>   // std::this_thread::sleep_for
+#include <iomanip>  // std::setw
 
-void CompareSplit(int nlocal, int *elmnts, int *relmnts, int *wspace,
-                  int keepsmall);
 
-int IncOrder(const void *e1, const void *e2);
+void CompareSplit(int, int*, int*, int*,int);
+int IncOrder(const void*, const void*);
 
 int main(int argc, char *argv[]) {
 
-  int n;
-  int npes;
-  int myrank;
-  int nlocal;
-  int *elmnts;
-  int *relmnts;
-  int oddrank;
-  int evenrank;
-  int *wspace;
-  int i;
+  int world_size, myrank, size_of_array, nlocal, oddrank, evenrank;
+  int *elmnts, *relmnts, *wspace;
+  bool show = false;
   MPI_Status status;
 
   MPI_Init(&argc, &argv);
-  MPI_Comm_size(MPI_COMM_WORLD, &npes);
+  MPI_Comm_size(MPI_COMM_WORLD, &world_size);
   MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
 
-  n = atoi(argv[1]);
-  nlocal = n / npes;
+  size_of_array = atoi(argv[1]);
+  show = argc > 2;
+  nlocal = size_of_array / world_size;
 
   elmnts = new int[nlocal];
   relmnts = new int[nlocal];
   wspace = new int[nlocal];
 
+  // Initialize the subarray with random values
   srandom(myrank);
-  for (i = 0; i < nlocal; i++)
-    elmnts[i] = random();
+  for (int i = 0; i < nlocal; i++)
+    elmnts[i] = random() % size_of_array;
 
+  // Sort the subarray with quick sort
+  // in ascending order
   qsort(elmnts, nlocal, sizeof(int), IncOrder);
 
+  // Determine the rank of the nodes that
+  // will be communicated with during the
+  // even and odd phases.
   if (myrank % 2 == 0) {
     oddrank = myrank - 1;
     evenrank = myrank + 1;
@@ -46,13 +52,13 @@ int main(int argc, char *argv[]) {
   }
 
   /* Set the ranks of the processors at the end of the linear */
-  if (oddrank == -1 || oddrank == npes)
+  if (oddrank == -1 || oddrank == world_size)
     oddrank = MPI_PROC_NULL;
-  if (evenrank == -1 || evenrank == npes)
+  if (evenrank == -1 || evenrank == world_size)
     evenrank = MPI_PROC_NULL;
 
   /* Get into the main loop of the odd-even sorting algorithm */
-  for (i = 0; i < npes - 1; i++) {
+  for (int i = 0; i < world_size - 1; i++) {
     if (i % 2 == 1) /* Odd phase */
       MPI_Sendrecv(elmnts, nlocal, MPI_INT, oddrank, 1, relmnts, nlocal,
                    MPI_INT, oddrank, 1, MPI_COMM_WORLD, &status);
@@ -60,6 +66,16 @@ int main(int argc, char *argv[]) {
       MPI_Sendrecv(elmnts, nlocal, MPI_INT, evenrank, 1, relmnts, nlocal,
                    MPI_INT, evenrank, 1, MPI_COMM_WORLD, &status);
     CompareSplit(nlocal, elmnts, relmnts, wspace, myrank < status.MPI_SOURCE);
+  }
+
+  if (show) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(100 * myrank));
+
+    std::cout << "I'm process " << myrank + 1 << " out of " << world_size << std::endl;
+    for(int i = 0; i < nlocal; i++) {
+      std::cout << std::setw(4) << elmnts[i] << " ";
+    }
+    std::cout << std::endl;
   }
 
   delete[] elmnts;
