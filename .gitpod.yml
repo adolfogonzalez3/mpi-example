@@ -9,4 +9,8 @@ ports:
 tasks:
 - init: echo 'init script' # runs during prebuild
   command: echo 'start script'
-- command: cp /work/mnist/*-ubyte .
+- command: >
+    mkdir data/ &&
+    cp /work/mnist/*-ubyte ./data/
+- command: gp open role_call.cpp
+

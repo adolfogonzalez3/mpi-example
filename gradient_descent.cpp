@@ -180,7 +180,7 @@ int main(int argc, char *argv[]) {
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 
   Dataset dataset =
-      mnist::read_dataset<std::vector, std::vector, uint8_t, uint8_t>(".");
+      mnist::read_dataset<std::vector, std::vector, uint8_t, uint8_t>("./data/");
   // mnist::normalize_dataset(dataset);
 
   const unsigned int PART_SIZE = dataset.training_images.size() / size;
