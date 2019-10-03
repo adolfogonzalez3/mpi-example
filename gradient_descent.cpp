@@ -1,12 +1,13 @@
-#include <Eigen/Dense>
-#include <iostream>
-#include <time.h>
-#include <mpi.h>
 #include "mnist/mnist_reader.hpp"
 #include "mnist/mnist_utils.hpp"
+#include <Eigen/Dense>
+#include <iostream>
+#include <math.h>
+#include <mpi.h>
+#include <time.h>
 
-using Eigen::MatrixXd;
 using Eigen::Map;
+using Eigen::MatrixXd;
 using namespace std;
 
 using Dataset =
@@ -156,9 +157,7 @@ public:
 
   void update_add(const vector<MatrixXd> &updates) {
     for (int i = 0; i < tensors.size(); i++) {
-      // cout << "updates " << i << " " << updates[i].rows() << " " <<
-      // updates[i].cols() << endl;
-      tensors[i]->update_add(-0.001 * updates[i]);
+      tensors[i]->update_add(updates[i]);
     }
   }
 };
@@ -179,10 +178,14 @@ int main(int argc, char *argv[]) {
   MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 
+  srand(0);
+
   Dataset dataset =
-      mnist::read_dataset<std::vector, std::vector, uint8_t, uint8_t>("./data/");
+      mnist::read_dataset<std::vector, std::vector, uint8_t, uint8_t>(
+          "./data/");
   // mnist::normalize_dataset(dataset);
 
+  const float LEARNING_RATE = 0.001 / sqrt(size);
   const unsigned int PART_SIZE = dataset.training_images.size() / size;
   const unsigned int LOW = PART_SIZE * myrank;
   const unsigned int HIGH = LOW + PART_SIZE;
@@ -228,31 +231,36 @@ int main(int argc, char *argv[]) {
     before_cost = (cost.array().pow(2) / 2).mean();
     auto gradients = network.gradients(cost);
     for (MatrixXd &grad : gradients) {
-      double* what = new double[grad.size()];
-      double* who = new double[grad.size()];
-      Map<MatrixXd>( what, grad.rows(), grad.cols() ) =   grad;
+      double *what = new double[grad.size()];
+      double *who = new double[grad.size()];
+      Map<MatrixXd>(what, grad.rows(), grad.cols()) = grad;
 
       MPI_Allreduce(what, who, grad.size(), MPI_DOUBLE, MPI_SUM,
                     MPI_COMM_WORLD);
-      grad = Map<MatrixXd>( who, grad.rows(), grad.cols() );
+      grad = Map<MatrixXd>(who, grad.rows(), grad.cols());
       grad = grad / (BATCH_SIZE * size);
       delete[] what;
       delete[] who;
+    }
+    for (int i = 0; i < gradients.size(); i++) {
+      gradients[i] = -LEARNING_RATE * gradients[i];
     }
     network.update_add(std::move(gradients));
     if (myrank == root && i % LOG == 0) {
       result = network(batch_x);
       cost = (batch_y - result);
       after_cost = (cost.array().pow(2) / 2).mean();
-      cout << "Cost Before: " << before_cost << " After: " << after_cost << endl;
+      cout << "Cost Before: " << before_cost << " After: " << after_cost
+           << endl;
     }
   }
 
-  if(myrank == root) {
+  if (myrank == root) {
     MatrixXd result_argmax = argmax(result);
     MatrixXd true_argmax = argmax(batch_y);
 
-    auto accuracy = (result_argmax.array() == true_argmax.array()).cast<float>();
+    auto accuracy =
+        (result_argmax.array() == true_argmax.array()).cast<float>();
     float acc = accuracy.mean();
 
     cout << "Accuracy: " << acc << endl;
