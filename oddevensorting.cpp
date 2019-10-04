@@ -7,6 +7,7 @@
 #include <stdlib.h> // srandom, random
 #include <thread>   // std::this_thread::sleep_for
 #include <iomanip>  // std::setw
+#include <time.h>
 
 
 void CompareSplit(int, int*, int*, int*,int);
@@ -19,9 +20,14 @@ int main(int argc, char *argv[]) {
   bool show = false;
   MPI_Status status;
 
+  time_t begin = time(NULL);
+
   MPI_Init(&argc, &argv);
   MPI_Comm_size(MPI_COMM_WORLD, &world_size);
   MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
+
+  if(myrank==0)
+    std::cout << "Begin sorting..." << std::endl;
 
   size_of_array = atoi(argv[1]);
   show = argc > 2;
@@ -76,7 +82,11 @@ int main(int argc, char *argv[]) {
       std::cout << std::setw(4) << elmnts[i] << " ";
     }
     std::cout << std::endl;
+    if(myrank == 0)
+        std::this_thread::sleep_for(std::chrono::milliseconds(100 * world_size));
   }
+  if(myrank == 0)
+    std::cout << "Finished Sorting in: " << time(NULL) - begin << std::endl;
 
   delete[] elmnts;
   delete[] relmnts;
