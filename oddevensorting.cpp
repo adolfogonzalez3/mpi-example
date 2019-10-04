@@ -25,6 +25,22 @@ int main(int argc, char *argv[]) {
   MPI_Init(&argc, &argv);
   MPI_Comm_size(MPI_COMM_WORLD, &world_size);
   MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
+  if(argc < 2){
+      if(myrank == 0)
+        std::cout << "This program sorts N numbers using MPI.\n"
+                    << "The program expects the user to pass in N "
+                    << "as a commandline argument.\n"
+                    << "If the user wants to print the resulting array "
+                    << "then an additional argument should be given.\n\n"
+                    << "Example: mpirun -np 8 a.out 25000000\n"
+                    << "Runs odd-even sorting on 25 million randomly generated "
+                    << "numbers.\n\n"
+                    << "Example: mpirun -np 8 a.out 250 1\n"
+                    << "Runs odd-even sorting on 250 randomly generated numbers "
+                    << "and then prints the resulting array.\n";
+    MPI_Finalize();
+    return 0;
+  }
 
   if(myrank==0)
     std::cout << "Begin sorting..." << std::endl;
