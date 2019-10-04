@@ -1,7 +1,7 @@
 #run:
 #	mpirun -np 2 ./gradient_descent |& grep -v "Read -1"
 
-build: gradient_descent.out cannon.out oddevensorting.out
+build: gradient_descent.out cannon.out oddevensorting.out role_call.out
 	echo "DONE"
 
 gradient_descent.out: gradient_descent.cpp
@@ -12,6 +12,9 @@ oddevensorting.out: oddevensorting.cpp
 
 cannon.out: cannon.cpp
 	mpiCC cannon.cpp -o cannon.out
+
+role_call.out: role_call.cpp
+	mpiCC role_call.cpp -o role_call.out
 
 clean:
 	rm -f core.*
