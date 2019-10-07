@@ -1,3 +1,9 @@
+// A program that trains a logistic model on MNIST using MPI
+// Uses MPI_Allreduce to efficiently train the model on multiple
+// nodes.
+// This program uses a library to read the MNIST data.
+// This program uses Eigen for computing the matrix
+// multiplications.
 #include "mnist/mnist_reader.hpp"
 #include "mnist/mnist_utils.hpp"
 #include <Eigen/Dense>
@@ -40,6 +46,7 @@ MatrixXd load_batch2D(const vector<vector<T>> &data, unsigned int from,
   return std::move(batch / 256);
 }
 
+// Load a batch from a 1d vector
 template <class T>
 MatrixXd load_batch1D(const vector<T> &data, unsigned int from,
                       unsigned int to) {
@@ -51,6 +58,10 @@ MatrixXd load_batch1D(const vector<T> &data, unsigned int from,
   return std::move(batch);
 }
 
+// Apply one hot to a matrix
+// 0 -> [1, 0, 0]
+// 1 -> [0, 1, 0]
+// 2 -> [0, 0, 1]
 MatrixXd to_onehot(const MatrixXd &matrix, const unsigned labels) {
   MatrixXd batch(matrix.rows(), labels);
   for (int i = 0; i < matrix.rows(); i++) {
@@ -61,16 +72,10 @@ MatrixXd to_onehot(const MatrixXd &matrix, const unsigned labels) {
   return std::move(batch);
 }
 
+// A general class for implementing operations
 class Tensor {
 public:
-  /*
-  MatrixXd operator()(const MatrixXd &input) const {
-    return std::move(forward(input));
-  }
-  */
-  virtual MatrixXd forward(const MatrixXd &input) const {
-    cout << "WHY?" << endl;
-  }
+  virtual MatrixXd forward(const MatrixXd &input) const {}
 
   MatrixXd backward(const MatrixXd &input) const {
     MatrixXd tmp = forward(input);
@@ -85,6 +90,7 @@ public:
   virtual void update_add(const MatrixXd &update){};
 };
 
+// Applies sigmoid to the output tensor.
 class Sigmoid : public Tensor {
 public:
   MatrixXd forward(const MatrixXd &input) const {
@@ -102,6 +108,7 @@ public:
   }
 };
 
+// A layer that densely connects with the input
 class Dense : public Tensor {
 private:
   MatrixXd parameters;
@@ -122,6 +129,7 @@ public:
   void update_add(const MatrixXd &update) { parameters = parameters + update; }
 };
 
+// A class for holding tensors
 class Network {
 private:
   vector<MatrixXd> forwards;
@@ -178,14 +186,15 @@ int main(int argc, char *argv[]) {
   MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 
+  // Seed the random number generator.
   srand(0);
 
   Dataset dataset =
       mnist::read_dataset<std::vector, std::vector, uint8_t, uint8_t>(
           "./data/");
-  // mnist::normalize_dataset(dataset);
+  //mnist::normalize_dataset(dataset);
 
-  const float LEARNING_RATE = 0.001 / sqrt(size);
+  const float LEARNING_RATE = 0.1 / sqrt(size);
   const unsigned int PART_SIZE = dataset.training_images.size() / size;
   const unsigned int LOW = PART_SIZE * myrank;
   const unsigned int HIGH = LOW + PART_SIZE;

@@ -7,7 +7,7 @@
 #include <stdlib.h> // srandom, random
 #include <thread>   // std::this_thread::sleep_for
 #include <iomanip>  // std::setw
-#include <time.h>
+#include <time.h>   // time
 
 
 void CompareSplit(int, int*, int*, int*,int);
@@ -20,11 +20,17 @@ int main(int argc, char *argv[]) {
   bool show = false;
   MPI_Status status;
 
+  // Begin the timer.
   time_t begin = time(NULL);
 
+  // Initialize the MPI context.
   MPI_Init(&argc, &argv);
+  // Get the MPI World size.
   MPI_Comm_size(MPI_COMM_WORLD, &world_size);
+  // Get the MPI process's rank.
   MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
+  // If there are additional arguments and the rank is 0
+  // then print help information.
   if(argc < 2){
       if(myrank == 0)
         std::cout << "This program sorts N numbers using MPI.\n"
@@ -45,8 +51,10 @@ int main(int argc, char *argv[]) {
   if(myrank==0)
     std::cout << "Begin sorting..." << std::endl;
 
+  // Get the total size of the random array.
   size_of_array = atoi(argv[1]);
   show = argc > 2;
+  // Divide the array into parts depending on the world size.
   nlocal = size_of_array / world_size;
 
   elmnts = new int[nlocal];
@@ -54,6 +62,9 @@ int main(int argc, char *argv[]) {
   wspace = new int[nlocal];
 
   // Initialize the subarray with random values
+  // Seed the random generator with the rank
+  // Lets the random generator produce
+  // reproducible results.
   srandom(myrank);
   for (int i = 0; i < nlocal; i++)
     elmnts[i] = random() % size_of_array;
@@ -90,6 +101,8 @@ int main(int argc, char *argv[]) {
     CompareSplit(nlocal, elmnts, relmnts, wspace, myrank < status.MPI_SOURCE);
   }
 
+  // If the user wants to see the result then print the numbers out.
+  // Delay each process by their rank.
   if (show) {
     std::this_thread::sleep_for(std::chrono::milliseconds(100 * myrank));
 
@@ -101,12 +114,14 @@ int main(int argc, char *argv[]) {
     if(myrank == 0)
         std::this_thread::sleep_for(std::chrono::milliseconds(100 * world_size));
   }
+  // Print the time the sorting finished in.
   if(myrank == 0)
     std::cout << "Finished Sorting in: " << time(NULL) - begin << std::endl;
 
   delete[] elmnts;
   delete[] relmnts;
   delete[] wspace;
+  // Clean up the MPI context.
   MPI_Finalize();
   return 0;
 }
