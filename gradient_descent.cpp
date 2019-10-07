@@ -154,7 +154,6 @@ public:
   vector<MatrixXd> gradients(const MatrixXd &grad) const {
     vector<MatrixXd> grads;
     grads.push_back(grad);
-    // cout << "HELLO " << i << " " << forwards.size() << endl;
     for (int i = tensors.size() - 1; i >= 0; i--) {
       grads.push_back(tensors[i]->backward_with(forwards[i], grads.back()));
     }
@@ -211,7 +210,8 @@ int main(int argc, char *argv[]) {
               << std::endl;
     std::cout << "Nbr of test labels = " << dataset.test_labels.size()
               << std::endl;
-    cout << dataset.training_images[0].size() << endl;
+    std::cout << "Nbr of features = " << dataset.training_images[0].size() << std::endl;
+    std::cout << "Nbr of classes = 10" << std::endl;
   }
 
   MatrixXd batch_x = load_batch2D(dataset.training_images, 0, BATCH_SIZE);
@@ -228,8 +228,8 @@ int main(int argc, char *argv[]) {
   int index = 0;
   double before_cost, after_cost;
   result = network(batch_x);
-  double *what = new double[7840];
-  double *who = new double[7840];
+  vector<double> what(7840);
+  vector<double> who(7840);
   for (int i = 0; i < ITERATIONS; i++) {
     index = i % MOD;
     batch_x = load_batch2D(dataset.training_images, BATCH_SIZE * index,
@@ -243,11 +243,11 @@ int main(int argc, char *argv[]) {
     auto gradients = network.gradients(cost);
     for (MatrixXd &grad : gradients) {
 
-      Map<MatrixXd>(what, grad.rows(), grad.cols()) = grad;
+      Map<MatrixXd>(what.data(), grad.rows(), grad.cols()) = grad;
 
-      MPI_Allreduce(what, who, grad.size(), MPI_DOUBLE, MPI_SUM,
+      MPI_Allreduce(what.data(), who.data(), grad.size(), MPI_DOUBLE, MPI_SUM,
                     MPI_COMM_WORLD);
-      grad = Map<MatrixXd>(who, grad.rows(), grad.cols());
+      grad = Map<MatrixXd>(who.data(), grad.rows(), grad.cols());
       grad = grad / (BATCH_SIZE * size);
     }
     for (int i = 0; i < gradients.size(); i++) {
@@ -258,13 +258,10 @@ int main(int argc, char *argv[]) {
       result = network(batch_x);
       cost = (batch_y - result);
       after_cost = (cost.array().pow(2) / 2).mean();
-      cout << "Cost Before: " << before_cost << " After: " << after_cost
-           << endl;
+      std::cout << "Cost Before: " << before_cost << " After: " << after_cost
+           << std::endl;
     }
   }
-
-  delete[] what;
-  delete[] who;
 
   if (myrank == root) {
     MatrixXd result_argmax = argmax(result);
@@ -274,8 +271,8 @@ int main(int argc, char *argv[]) {
         (result_argmax.array() == true_argmax.array()).cast<double>();
     double acc = accuracy.mean();
 
-    cout << "Accuracy: " << acc << endl;
-    cout << "Time Elapsed: " << time(NULL) - begin << endl;
+    std::cout << "Accuracy: " << acc << std::endl;
+    std::cout << "Time Elapsed: " << time(NULL) - begin << std::endl;
   }
 
   MPI_Finalize();
