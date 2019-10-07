@@ -194,7 +194,7 @@ int main(int argc, char *argv[]) {
           "./data/");
   //mnist::normalize_dataset(dataset);
 
-  const float LEARNING_RATE = 0.1 / sqrt(size);
+  const double LEARNING_RATE = 0.1 / sqrt(size);
   const unsigned int PART_SIZE = dataset.training_images.size() / size;
   const unsigned int LOW = PART_SIZE * myrank;
   const unsigned int HIGH = LOW + PART_SIZE;
@@ -226,8 +226,10 @@ int main(int argc, char *argv[]) {
   network.push(unique_ptr<Dense>(new Dense(784, 10)));
   network.push(unique_ptr<Sigmoid>(new Sigmoid()));
   int index = 0;
-  float before_cost, after_cost;
+  double before_cost, after_cost;
   result = network(batch_x);
+  double *what = new double[7840];
+  double *who = new double[7840];
   for (int i = 0; i < ITERATIONS; i++) {
     index = i % MOD;
     batch_x = load_batch2D(dataset.training_images, BATCH_SIZE * index,
@@ -240,16 +242,13 @@ int main(int argc, char *argv[]) {
     before_cost = (cost.array().pow(2) / 2).mean();
     auto gradients = network.gradients(cost);
     for (MatrixXd &grad : gradients) {
-      double *what = new double[grad.size()];
-      double *who = new double[grad.size()];
+
       Map<MatrixXd>(what, grad.rows(), grad.cols()) = grad;
 
       MPI_Allreduce(what, who, grad.size(), MPI_DOUBLE, MPI_SUM,
                     MPI_COMM_WORLD);
       grad = Map<MatrixXd>(who, grad.rows(), grad.cols());
       grad = grad / (BATCH_SIZE * size);
-      delete[] what;
-      delete[] who;
     }
     for (int i = 0; i < gradients.size(); i++) {
       gradients[i] = -LEARNING_RATE * gradients[i];
@@ -264,13 +263,16 @@ int main(int argc, char *argv[]) {
     }
   }
 
+  delete[] what;
+  delete[] who;
+
   if (myrank == root) {
     MatrixXd result_argmax = argmax(result);
     MatrixXd true_argmax = argmax(batch_y);
 
     auto accuracy =
-        (result_argmax.array() == true_argmax.array()).cast<float>();
-    float acc = accuracy.mean();
+        (result_argmax.array() == true_argmax.array()).cast<double>();
+    double acc = accuracy.mean();
 
     cout << "Accuracy: " << acc << endl;
     cout << "Time Elapsed: " << time(NULL) - begin << endl;
