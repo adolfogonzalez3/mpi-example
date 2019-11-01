@@ -16,6 +16,9 @@ cannon.out: cannon.cpp
 role_call.out: role_call.cpp
 	mpiCC role_call.cpp -o role_call.out
 
+redirect_input.out: redirect_input.cpp
+	mpiCC redirect_input.cpp -o redirect_input.out
+
 clean:
 	rm -f core.*
 	rm -f *.out
