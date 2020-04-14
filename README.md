@@ -11,4 +11,4 @@ Relies on:
 * Eigen for gradient_descent program
 * MNIST data for training
 
-You can try the examples in a [Gitpod] (https://gitpod.io/#https://github.com/adolfogonzalez3/mpi-example)
+You can try the examples in a [Gitpod](https://gitpod.io/#https://github.com/adolfogonzalez3/mpi-example)
